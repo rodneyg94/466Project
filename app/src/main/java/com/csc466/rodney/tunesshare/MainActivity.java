@@ -8,8 +8,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import android.net.Uri;
 import android.content.ComponentName;
 import android.content.ContentResolver;
@@ -37,16 +35,8 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         songView = (ListView)findViewById(R.id.song_list);
-        songList = new ArrayList<Song>();
+        songList = new ArrayList<>();
         getSongList();
-
-        // Sort song list by title
-        Collections.sort(songList, new Comparator<Song>() {
-            public int compare(Song a, Song b) {
-                return a.getTitle().compareTo(b.getTitle());
-            }
-        });
-
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
         setController();
@@ -112,7 +102,9 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
     public void getSongList() {
         ContentResolver musicResolver = getContentResolver();
         Uri musicUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        Cursor musicCursor = musicResolver.query(musicUri, null, null, null, null);
+        String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
+        String sortOrder = MediaStore.Audio.Media.DISPLAY_NAME;
+        Cursor musicCursor = musicResolver.query(musicUri, null, selection, null, sortOrder);
 
         if (musicCursor != null && musicCursor.moveToFirst()) {
             // Get columns
@@ -216,8 +208,7 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
     }
 
     public boolean isPlaying() {
-        if (musicSrv != null && musicBound) return musicSrv.isPng();
-        return false;
+        return (musicSrv != null && musicBound && musicSrv.isPng());
     }
 
     @Override
