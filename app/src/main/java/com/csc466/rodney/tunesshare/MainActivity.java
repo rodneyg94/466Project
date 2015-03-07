@@ -1,5 +1,7 @@
 package com.csc466.rodney.tunesshare;
 
+import android.net.nsd.NsdManager;
+import android.net.nsd.NsdServiceInfo;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -30,6 +32,9 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
     private MusicController controller;
     private boolean paused = false, playbackPaused = false;
 
+    private NsdManager mNsdManager;
+    private NsdManager.RegistrationListener mRegistrationListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,6 +45,9 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
         setController();
+
+        initializeRegistrationListener();
+        registerService(9000);
     }
 
     //connect to the service
@@ -244,6 +252,53 @@ public class MainActivity extends ActionBarActivity implements MediaPlayerContro
     public int getDuration() {
         if (musicSrv != null && musicBound && musicSrv.isPng()) return musicSrv.getDur();
         return 0;
+    }
+
+    // Register service on network
+    public void registerService(int port) {
+        // Create the NsdServiceInfo object, and populate it.
+        NsdServiceInfo serviceInfo  = new NsdServiceInfo();
+
+        // The name is subject to change based on conflicts
+        // with other services advertised on the same network.
+        serviceInfo.setServiceName("TunesShare");
+        serviceInfo.setServiceType("_http._tcp.");
+        serviceInfo.setPort(port);
+
+        mNsdManager = Context.getSystemService(Context.NSD_SERVICE);
+
+        mNsdManager.registerService(
+                serviceInfo, NsdManager.PROTOCOL_DNS_SD, mRegistrationListener);
+
+    }
+
+    public void initializeRegistrationListener() {
+        mRegistrationListener = new NsdManager.RegistrationListener() {
+
+            @Override
+            public void onServiceRegistered(NsdServiceInfo NsdServiceInfo) {
+                // Save the service name.  Android may have changed it in order to
+                // resolve a conflict, so update the name you initially requested
+                // with the name Android actually used.
+                String mServiceName = NsdServiceInfo.getServiceName();
+            }
+
+            @Override
+            public void onRegistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                // Registration failed!  Put debugging code here to determine why.
+            }
+
+            @Override
+            public void onServiceUnregistered(NsdServiceInfo arg0) {
+                // Service has been unregistered.  This only happens when you call
+                // NsdManager.unregisterService() and pass in this listener.
+            }
+
+            @Override
+            public void onUnregistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {
+                // Unregistration failed.  Put debugging code here to determine why.
+            }
+        };
     }
 
 }
